@@ -5,6 +5,8 @@ import numpy as np
 @st.cache_data
 def get_raw_data():
     df = pd.read_hdf("regh_slim.h5", "table")
+    bo3_df = pd.read_hdf("regh_slim_bo3.h5", "table")
+    df = pd.concat([df, bo3_df], axis=0)
     mons = df.appearances.apply(lambda x: set(x.keys()))
     all_mons = set()
     for monset in mons:
@@ -146,12 +148,57 @@ mask = appearances_start <= single_pokemon_results_df.appearances
 mask &= single_pokemon_results_df.appearances <= appearances_end
 single_pokemon_results_df = single_pokemon_results_df[mask]
 st.dataframe(single_pokemon_results_df,
-column_config={
-    "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
-    "max_error_999pct_confidence": st.column_config.NumberColumn("99.9% confidence interval size", format="%.2f %%"),
-    "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
-    "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
+    column_config={
+        "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
+        "max_error_999pct_confidence": st.column_config.NumberColumn("99.9% confidence interval size", format="%.2f %%"),
+        "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
+        "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
 })
 
 st.header("Multiple Pokemon Win-%")
-    
+
+@st.cache_data
+def estimate_win_probability_teams(wins_df):
+    appearances = {}
+    wins = {}
+    for row in wins_df.itertuples():
+        winner = row.winner
+        winning_pokemon = tuple(sorted(set(poke['name'] for poke in row.pokemon if poke['player'] == winner)))
+        losing_pokemon = tuple(sorted(set(poke['name'] for poke in row.pokemon if poke['player'] != winner)))
+        try:
+            wins[winning_pokemon] += 1
+        except KeyError:
+            wins[winning_pokemon] = 1
+        try:
+            appearances[winning_pokemon] += 1
+        except KeyError:
+            appearances[winning_pokemon] = 1
+        try:
+            appearances[losing_pokemon] += 1
+        except KeyError:
+            appearances[losing_pokemon] = 1
+    result = [{
+        "team": pokemon,
+        "appearances": num_appearances,
+        "wins": wins.get(pokemon, 0),
+    } for (pokemon, num_appearances) in appearances.items()]
+    result = pd.DataFrame(data=result)
+    result['win_pct'] = result.wins / result.appearances
+    result['max_error_999pct_confidence'] = \
+        3.29053 * np.sqrt(result.win_pct * (1- result.win_pct) / result.appearances)
+    result['win_pct'] *= 100
+    result['max_error_999pct_confidence'] *= 100
+    result['confidence_lower_bound'] = result.win_pct - result.max_error_999pct_confidence
+    result['confidence_upper_bound'] = result.win_pct + result.max_error_999pct_confidence
+    result = result.sort_values(by="win_pct", ascending=False)
+    return result
+
+multi_pokemon_results_df = estimate_win_probability_teams(sample_df)
+
+st.dataframe(multi_pokemon_results_df,
+    column_config={
+        "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
+        "max_error_999pct_confidence": st.column_config.NumberColumn("99.9% confidence interval size", format="%.2f %%"),
+        "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
+        "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
+})
