@@ -5,9 +5,13 @@ import numpy as np
 @st.cache_data
 def get_raw_data():
     df = pd.read_hdf("regh_slim.h5", "table")
-    return df
+    mons = df.appearances.apply(lambda x: set(x.keys()))
+    all_mons = set()
+    for monset in mons:
+        all_mons |= monset
+    return df, sorted(all_mons)
 
-df = get_raw_data()
+df, all_mons = get_raw_data()
 
 st.header("Filters")
 filters_columns = st.columns(3)
@@ -48,6 +52,16 @@ with filters_columns[2]:
             "wins": None,
         })
 
+seen_pokemon_filter = st.multiselect(
+    "Filter by pokémon seen",
+    all_mons,
+)
+
+won_pokemon_filter = st.multiselect(
+    "Filter by pokémon that won",
+    all_mons,
+)
+
 st.header("Data used")
 data_selector_container = st.container()
 
@@ -55,6 +69,17 @@ mask = df.uploadtime <= pd.to_datetime(filter_end)
 mask &= pd.to_datetime(filter_start) <= df.uploadtime
 mask &= rating_filter_start <= df.rating
 mask &= df.rating <= rating_filter_end
+
+if len(seen_pokemon_filter) > 0:
+    seen_mask = df.appearances.apply(
+        lambda pokeset: any(p in seen_pokemon_filter for p in pokeset))
+    mask &= seen_mask
+
+if len(won_pokemon_filter) > 0:
+    won_mask = df.wins.apply(
+        lambda pokeset: any(pokeset.get(mon, 0) for mon in won_pokemon_filter))
+    mask &= won_mask
+
 sample_df = df[mask]
 
 bottom_menu = st.columns((3, 1, 1))
@@ -72,7 +97,7 @@ with bottom_menu[0]:
 
 data_selector_container.dataframe(
     sample_df.iloc[(current_page - 1) * page_size:current_page * page_size + 1],
-    hide_index=False,
+    hide_index=True,
     column_config=col_config,
 )
 
