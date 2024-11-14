@@ -103,6 +103,8 @@ def estimate_win_probability(sample_df):
     result['win_pct'] = result.wins / result.appearances
     result['max_error_999pct_confidence'] = \
         3.29053 * np.sqrt(result.win_pct * (1 - result.win_pct) / result.appearances)
+    result['win_pct'] *= 100
+    result['max_error_999pct_confidence'] *= 100
     result['confidence_lower_bound'] = result.win_pct - result.max_error_999pct_confidence
     result['confidence_upper_bound'] = result.win_pct + result.max_error_999pct_confidence
     result = result.sort_values(by="win_pct", ascending=False)
@@ -120,10 +122,10 @@ mask &= single_pokemon_results_df.appearances <= appearances_end
 single_pokemon_results_df = single_pokemon_results_df[mask]
 st.dataframe(single_pokemon_results_df,
 column_config={
-    "win_pct": "% Win",
-    "max_error_999pct_confidence": "99.9% confidence interval size",
-    "confidence_lower_bound": "% Win lower bound",
-    "confidence_upper_bound": "% Win upper bound",
+    "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
+    "max_error_999pct_confidence": st.column_config.NumberColumn("99.9% confidence interval size", format="%.2f %%"),
+    "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
+    "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
 })
 
 st.header("Multiple Pokemon Win-%")
