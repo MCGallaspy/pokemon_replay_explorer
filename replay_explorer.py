@@ -8,6 +8,7 @@ def get_raw_data():
     bo3_df = pd.read_hdf("regh_slim_bo3.h5", "table")
     df = pd.concat([df, bo3_df], axis=0)
     mons = df.appearances.apply(lambda x: set(x.keys()))
+    df['replay_link'] = df.apply(lambda row: f"https://replay.pokemonshowdown.com/{row.name}", axis=1)
     all_mons = set()
     for monset in mons:
         all_mons |= monset
@@ -45,6 +46,7 @@ with filters_columns[1]:
 col_config = {
     "replay_link": st.column_config.LinkColumn(
         display_text="Go to replay"),
+    "pokemon": None,
 }
 
 with filters_columns[2]:
