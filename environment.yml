@@ -1,5 +1,4 @@
 name: replay_explorer_streamlit_cloud_env
 dependencies:
-  - streamlit
   - pandas
   - pytables
