@@ -38,7 +38,7 @@ with filters_columns[0]:
 with filters_columns[1]:
     rating_filter_start, rating_filter_end = st.slider(
         "Rating range",
-        value=(df.rating.min(), df.rating.max()),
+        value=(1200.0, df.rating.max()),
         min_value=df.rating.min(),
         max_value=df.rating.max()
     )
@@ -50,7 +50,7 @@ col_config = {
 }
 
 with filters_columns[2]:
-    include_unrated = st.toggle("Include unrated games", value=True)
+    include_unrated = st.toggle("Include unrated games", value=False)
     if not st.toggle("Show hidden data", value=False):
         col_config.update({
             "appearances": None,
@@ -158,7 +158,7 @@ def estimate_win_probability(sample_df):
 single_pokemon_results_df = estimate_win_probability(sample_df)
 appearances_start, appearances_end = st.slider(
     "Num appearances filter",
-    value=(single_pokemon_results_df.appearances.min(), single_pokemon_results_df.appearances.max()),
+    value=(10, single_pokemon_results_df.appearances.max()),
     min_value=single_pokemon_results_df.appearances.min(),
     max_value=single_pokemon_results_df.appearances.max()
 )
@@ -223,7 +223,7 @@ multi_pokemon_results_df = estimate_win_probability_teams(sample_df)
 
 appearances_start, appearances_end = st.slider(
     "Num appearances filter",
-    value=(multi_pokemon_results_df.appearances.min(), multi_pokemon_results_df.appearances.max()),
+    value=(10, multi_pokemon_results_df.appearances.max()),
     min_value=multi_pokemon_results_df.appearances.min(),
     max_value=multi_pokemon_results_df.appearances.max()
 )
