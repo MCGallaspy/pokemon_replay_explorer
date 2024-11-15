@@ -65,7 +65,7 @@ meta_format_filter = st.multiselect(
 )
 
 seen_pokemon_filter = st.multiselect(
-    "Filter by pokémon seen",
+    "Filter by pokémon seen (any of these may appear)",
     all_mons,
 )
 
@@ -111,11 +111,14 @@ with bottom_menu[0]:
     st.markdown(f"**{sample_df.shape[0]}** total replays")
 
 
-
+columns = list(sample_df)
+columns.remove('replay_link')
+columns = ['replay_link'] + columns
 data_selector_container.dataframe(
     sample_df.iloc[(current_page - 1) * page_size:current_page * page_size + 1],
     hide_index=True,
     column_config=col_config,
+    column_order=columns,
 )
 
 
@@ -172,6 +175,14 @@ st.dataframe(single_pokemon_results_df,
 
 st.header("Multiple Pokemon Win-%")
 
+st.markdown("""A note on interpreting this:
+* If only two pokémon appear, it means someone won with that lead pair,
+  without switching in pokémon from the back.
+* If three pokémon appear, it means one pokémon got switched in.
+* If four pokémon appear, it means that the whole team was seen.
+* If five pokémon appear, it's a Zoroark situation.
+""")
+
 @st.cache_data
 def estimate_win_probability_teams(wins_df):
     appearances = {}
@@ -218,7 +229,7 @@ appearances_start, appearances_end = st.slider(
 )
 
 seen_pokemon_filter = st.multiselect(
-    "Filter by pokémon seen",
+    "Filter by pokémon seen (ALL of them must appear)",
     all_mons,
     key="multi_pokemon_results_seen_filter",
 )
@@ -228,7 +239,7 @@ mask &= multi_pokemon_results_df.appearances <= appearances_end
 
 if len(seen_pokemon_filter) > 0:
     seen_mask = multi_pokemon_results_df.team.apply(
-        lambda pokeset: any(p in seen_pokemon_filter for p in pokeset)
+        lambda pokeset: all(p in pokeset for p in seen_pokemon_filter)
     )
     mask &= seen_mask
 
@@ -241,3 +252,4 @@ st.dataframe(multi_pokemon_results_df,
         "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
         "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
 })
+st.markdown(f"**{multi_pokemon_results_df.shape[0]}** unique teams seen.")
