@@ -216,8 +216,22 @@ appearances_start, appearances_end = st.slider(
     min_value=multi_pokemon_results_df.appearances.min(),
     max_value=multi_pokemon_results_df.appearances.max()
 )
+
+seen_pokemon_filter = st.multiselect(
+    "Filter by pokémon seen",
+    all_mons,
+    key="multi_pokemon_results_seen_filter",
+)
+
 mask = appearances_start <= multi_pokemon_results_df.appearances
 mask &= multi_pokemon_results_df.appearances <= appearances_end
+
+if len(seen_pokemon_filter) > 0:
+    seen_mask = multi_pokemon_results_df.team.apply(
+        lambda pokeset: any(p in seen_pokemon_filter for p in pokeset)
+    )
+    mask &= seen_mask
+
 multi_pokemon_results_df = multi_pokemon_results_df[mask]
 
 st.dataframe(multi_pokemon_results_df,
