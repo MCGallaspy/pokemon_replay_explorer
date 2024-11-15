@@ -56,6 +56,13 @@ with filters_columns[2]:
             "wins": None,
         })
 
+meta_formats = list(df.format.value_counts().index)
+meta_format_filter = st.multiselect(
+    "Filter by meta format",
+    meta_formats,
+    meta_formats,
+)
+
 seen_pokemon_filter = st.multiselect(
     "Filter by pokémon seen",
     all_mons,
@@ -73,6 +80,7 @@ mask = df.uploadtime <= pd.to_datetime(filter_end)
 mask &= pd.to_datetime(filter_start) <= df.uploadtime
 mask &= rating_filter_start <= df.rating
 mask &= df.rating <= rating_filter_end
+mask &= df.format.isin(meta_format_filter)
 
 if len(seen_pokemon_filter) > 0:
     seen_mask = df.appearances.apply(
