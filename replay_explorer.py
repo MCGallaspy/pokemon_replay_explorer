@@ -234,6 +234,14 @@ seen_pokemon_filter = st.multiselect(
     key="multi_pokemon_results_seen_filter",
 )
 
+sort_keys = st.multiselect(
+    "Sort pages by",
+    list(multi_pokemon_results_df),
+    "win_pct",
+)
+st.markdown("""The built-in table controls only sort the current page.
+To sort results across all pages, use the selector above.""")
+
 mask = appearances_start <= multi_pokemon_results_df.appearances
 mask &= multi_pokemon_results_df.appearances <= appearances_end
 
@@ -245,11 +253,30 @@ if len(seen_pokemon_filter) > 0:
 
 multi_pokemon_results_df = multi_pokemon_results_df[mask]
 
-st.dataframe(multi_pokemon_results_df,
+if len(sort_keys) > 0:
+    multi_pokemon_results_df = multi_pokemon_results_df.sort_values(by=sort_keys, ascending=False)
+
+multi_results_container = st.container(key="multi_results")
+
+multi_results_bottom = st.columns((3, 1, 1))
+
+with multi_results_bottom[2]:
+    page_size = st.number_input("Page Size", value=50, key="multi_results_page_size")
+with multi_results_bottom[1]:
+    num_pages = (multi_pokemon_results_df.shape[0] + page_size - 1) // page_size
+    current_page = st.number_input(
+        "Page", min_value=1, max_value=num_pages, step=1,
+        key="multi_pokemon_results_page",
+    )
+with multi_results_bottom[0]:
+    st.markdown(f"Page **{current_page}** of **{num_pages}** ")
+    st.markdown(f"**{multi_pokemon_results_df.shape[0]}** unique teams seen.")
+
+multi_results_container.dataframe(
+    multi_pokemon_results_df.iloc[(current_page - 1) * page_size:current_page * page_size + 1],
     column_config={
         "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
         "max_error_999pct_confidence": st.column_config.NumberColumn("99.9% confidence interval size", format="%.2f %%"),
         "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
         "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
 })
-st.markdown(f"**{multi_pokemon_results_df.shape[0]}** unique teams seen.")
