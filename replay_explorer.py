@@ -256,7 +256,7 @@ multi_pokemon_results_df = multi_pokemon_results_df[mask]
 if len(sort_keys) > 0:
     multi_pokemon_results_df = multi_pokemon_results_df.sort_values(by=sort_keys, ascending=False)
 
-multi_results_container = st.container(key="multi_results")
+multi_results_container = st.container()
 
 multi_results_bottom = st.columns((3, 1, 1))
 
