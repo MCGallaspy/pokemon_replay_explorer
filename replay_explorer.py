@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-@st.cache_data
+@st.cache_resource
 def get_raw_data():
     df = pd.read_hdf("regh_slim.h5", "table")
     bo3_df = pd.read_hdf("regh_slim_bo3.h5", "table")
