@@ -50,6 +50,7 @@ col_config = {
 }
 
 with filters_columns[2]:
+    include_unrated = st.toggle("Include unrated games", value=True)
     if not st.toggle("Show hidden data", value=False):
         col_config.update({
             "appearances": None,
@@ -82,6 +83,9 @@ mask &= rating_filter_start <= df.rating
 mask &= df.rating <= rating_filter_end
 mask &= df.format.isin(meta_format_filter)
 
+if include_unrated:
+    mask |= df.rating.isna()
+
 if len(seen_pokemon_filter) > 0:
     seen_mask = df.appearances.apply(
         lambda pokeset: any(p in seen_pokemon_filter for p in pokeset))
@@ -104,6 +108,7 @@ with bottom_menu[1]:
     )
 with bottom_menu[0]:
     st.markdown(f"Page **{current_page}** of **{num_pages}** ")
+    st.markdown(f"**{sample_df.shape[0]}** total replays")
 
 
 
@@ -204,6 +209,16 @@ def estimate_win_probability_teams(wins_df):
     return result
 
 multi_pokemon_results_df = estimate_win_probability_teams(sample_df)
+
+appearances_start, appearances_end = st.slider(
+    "Num appearances filter",
+    value=(multi_pokemon_results_df.appearances.min(), multi_pokemon_results_df.appearances.max()),
+    min_value=multi_pokemon_results_df.appearances.min(),
+    max_value=multi_pokemon_results_df.appearances.max()
+)
+mask = appearances_start <= multi_pokemon_results_df.appearances
+mask &= multi_pokemon_results_df.appearances <= appearances_end
+multi_pokemon_results_df = multi_pokemon_results_df[mask]
 
 st.dataframe(multi_pokemon_results_df,
     column_config={
