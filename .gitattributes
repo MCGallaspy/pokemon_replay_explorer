@@ -1,0 +1,2 @@
+regh_slim.h5 filter=lfs diff=lfs merge=lfs -text
+regh_slim_bo3.h5 filter=lfs diff=lfs merge=lfs -text
