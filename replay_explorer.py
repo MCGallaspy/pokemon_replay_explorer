@@ -194,6 +194,7 @@ st.header("Single Pokemon Win-%")
 def estimate_win_probability(sample_df):
     appearances = {}
     wins = {}
+    players = {}
     for row in sample_df.itertuples():
         for pokemon, num_appearances in row.appearances.items():
             try:
@@ -205,10 +206,18 @@ def estimate_win_probability(sample_df):
                 wins[pokemon] += num_wins
             except KeyError:
                 wins[pokemon] = num_wins
+        for switch_spec in row.pokemon:
+            mon = switch_spec['name']
+            player = switch_spec['player']
+            try:
+                players[mon].add(player)
+            except KeyError:
+                players[mon] = {player}
     result = [{
         "pokemon": pokemon,
         "appearances": num_appearances,
         "wins": wins[pokemon],
+        "players": len(players.get(pokemon, [])),
     } for (pokemon, num_appearances) in appearances.items()]
     result = pd.DataFrame(data=result)
     result['win_pct'] = result.wins / result.appearances
