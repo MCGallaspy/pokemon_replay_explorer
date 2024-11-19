@@ -97,6 +97,9 @@ if len(won_pokemon_filter) > 0:
     mask &= won_mask
 
 sample_df = df[mask]
+if sample_df.shape[0] == 0:
+    st.warning("No data selected")
+    st.stop()
 
 bottom_menu = st.columns((3, 1, 1))
 with bottom_menu[2]:
@@ -164,7 +167,12 @@ appearances_start, appearances_end = st.slider(
 )
 mask = appearances_start <= single_pokemon_results_df.appearances
 mask &= single_pokemon_results_df.appearances <= appearances_end
+
 single_pokemon_results_df = single_pokemon_results_df[mask]
+if single_pokemon_results_df.shape[0] == 0:
+    st.warning("No matches")
+    st.stop()
+    
 st.dataframe(single_pokemon_results_df,
     column_config={
         "win_pct": st.column_config.NumberColumn("% Win", format="%.2f %%"),
@@ -252,6 +260,9 @@ if len(seen_pokemon_filter) > 0:
     mask &= seen_mask
 
 multi_pokemon_results_df = multi_pokemon_results_df[mask]
+if multi_pokemon_results_df.shape[0] == 0:
+    st.warning("No matches")
+    st.stop()
 
 if len(sort_keys) > 0:
     multi_pokemon_results_df = multi_pokemon_results_df.sort_values(by=sort_keys, ascending=False)
