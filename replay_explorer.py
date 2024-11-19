@@ -268,6 +268,7 @@ st.markdown("""A note on interpreting this:
 def estimate_win_probability_teams(wins_df):
     appearances = {}
     wins = {}
+    players = {}
     for row in wins_df.itertuples():
         winner = row.winner
         winning_pokemon = tuple(sorted(set(poke['name'] for poke in row.pokemon if poke['player'] == winner)))
@@ -284,10 +285,27 @@ def estimate_win_probability_teams(wins_df):
             appearances[losing_pokemon] += 1
         except KeyError:
             appearances[losing_pokemon] = 1
+        
+        try:
+            players[winning_pokemon].add(row.winner)
+        except KeyError:
+            players[winning_pokemon] = {row.winner}
+
+        try:
+            winner_idx = list(row.players).index(winner)
+            loser = row.players[1 - winner_idx]
+        except ValueError:
+            continue # Abort I guess
+        try:
+            players[losing_pokemon].add(loser)
+        except KeyError:
+            players[losing_pokemon] = {loser}
+
     result = [{
         "team": pokemon,
         "appearances": num_appearances,
         "wins": wins.get(pokemon, 0),
+        "players": len(players.get(pokemon, [])),
     } for (pokemon, num_appearances) in appearances.items()]
     result = pd.DataFrame(data=result)
     result['win_pct'] = result.wins / result.appearances
