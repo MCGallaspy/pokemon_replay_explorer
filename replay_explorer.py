@@ -64,15 +64,25 @@ meta_format_filter = st.multiselect(
     meta_formats,
 )
 
-seen_pokemon_filter = st.multiselect(
-    "Filter by pokémon seen (any of these may appear)",
-    all_mons,
-)
+seen_pokemon_picker = st.columns([0.8, 0.2])
+with seen_pokemon_picker[0]:
+    seen_pokemon_filter = st.multiselect(
+        "Filter by pokémon seen",
+        all_mons,
+    )
+with seen_pokemon_picker[1]:
+    seen_pokemon_mode = st.radio(
+        "Mode", ["any", "all"], index=1, key="seen_pokemon_mode")
 
-won_pokemon_filter = st.multiselect(
-    "Filter by pokémon that won",
-    all_mons,
-)
+won_pokemon_picker = st.columns([0.8, 0.2])
+with won_pokemon_picker[0]:
+    won_pokemon_filter = st.multiselect(
+        "Filter by pokémon that won",
+        all_mons,
+    )
+with won_pokemon_picker[1]:
+    won_pokemon_mode = st.radio(
+        "Mode", ["any", "all"], index=1, key="won_pokemon_mode")
 
 st.header("Data used")
 data_selector_container = st.container()
@@ -87,13 +97,15 @@ if include_unrated:
     mask |= df.rating.isna()
 
 if len(seen_pokemon_filter) > 0:
+    filter_func = any if seen_pokemon_mode == "any" else all
     seen_mask = df.appearances.apply(
-        lambda pokeset: any(p in seen_pokemon_filter for p in pokeset))
+        lambda pokeset: filter_func(p in seen_pokemon_filter for p in pokeset))
     mask &= seen_mask
 
 if len(won_pokemon_filter) > 0:
+    filter_func = any if won_pokemon_mode == "any" else all
     won_mask = df.wins.apply(
-        lambda pokeset: any(pokeset.get(mon, 0) for mon in won_pokemon_filter))
+        lambda pokeset: filter_func(pokeset.get(mon, 0) for mon in won_pokemon_filter))
     mask &= won_mask
 
 sample_df = df[mask]
