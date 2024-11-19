@@ -310,11 +310,16 @@ appearances_start, appearances_end = st.slider(
     key="multi_pokemon_appearances_filter",
 )
 
-seen_pokemon_filter = st.multiselect(
-    "Filter by pokémon seen (ALL of them must appear)",
-    all_mons,
-    key="multi_pokemon_results_seen_filter",
-)
+seen_pokemon_picker = st.columns([0.8, 0.2])
+with seen_pokemon_picker[0]:
+    seen_pokemon_filter = st.multiselect(
+        "Filter by pokémon seen",
+        all_mons,
+        key="multi_pokemon_result_seen_filter",
+    )
+with seen_pokemon_picker[1]:
+    seen_pokemon_mode = st.radio(
+        "Mode", ["any", "all"], index=1, key="multi_pokemon_result_seen_pokemon_mode")
 
 sort_keys = st.multiselect(
     "Sort pages by",
@@ -328,9 +333,9 @@ mask = appearances_start <= multi_pokemon_results_df.appearances
 mask &= multi_pokemon_results_df.appearances <= appearances_end
 
 if len(seen_pokemon_filter) > 0:
+    filter_func = any if seen_pokemon_mode == "any" else all
     seen_mask = multi_pokemon_results_df.team.apply(
-        lambda pokeset: all(p in pokeset for p in seen_pokemon_filter)
-    )
+        lambda pokeset: filter_func(p in pokeset for p in seen_pokemon_filter))
     mask &= seen_mask
 
 multi_pokemon_results_df = multi_pokemon_results_df[mask]
