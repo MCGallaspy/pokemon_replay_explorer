@@ -12,9 +12,12 @@ def get_raw_data():
     all_mons = set()
     for monset in mons:
         all_mons |= monset
-    return df, sorted(all_mons)
+    all_players = set()
+    for playerset in df.players.apply(set):
+        all_players |= playerset
+    return df, sorted(all_mons), sorted(all_players)
 
-df, all_mons = get_raw_data()
+df, all_mons, all_players = get_raw_data()
 
 st.header("Filters")
 filters_columns = st.columns(3)
@@ -94,6 +97,17 @@ with lost_pokemon_picker[1]:
     lost_pokemon_mode = st.radio(
         "Mode", ["any", "all"], index=1, key="lost_pokemon_mode")
 
+
+player_picker = st.columns([0.8, 0.2])
+with player_picker[0]:
+    player_filter = st.multiselect(
+        "Filter by players",
+        all_players,
+    )
+with player_picker[1]:
+    player_mode = st.radio(
+        "Mode", ["any", "all"], index=1, key="player_mode")
+
 st.header("Data used")
 data_selector_container = st.container()
 
@@ -138,6 +152,12 @@ if len(lost_pokemon_filter) > 0:
             poke_lost_mask |= (num_appearances == 2) & (num_wins == 1)
             lost_mask |= poke_lost_mask
         mask &= lost_mask
+
+if len(player_filter) > 0:
+    filter_func = any if player_mode == "any" else all
+    player_mask = df.players.apply(
+        lambda players: filter_func(player in players for player in player_filter))
+    mask &= player_mask
 
 sample_df = df[mask]
 if sample_df.shape[0] == 0:
