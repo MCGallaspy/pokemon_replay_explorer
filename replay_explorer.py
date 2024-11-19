@@ -84,6 +84,16 @@ with won_pokemon_picker[1]:
     won_pokemon_mode = st.radio(
         "Mode", ["any", "all"], index=1, key="won_pokemon_mode")
 
+lost_pokemon_picker = st.columns([0.8, 0.2])
+with lost_pokemon_picker[0]:
+    lost_pokemon_filter = st.multiselect(
+        "Filter by pokémon that lost",
+        all_mons,
+    )
+with lost_pokemon_picker[1]:
+    lost_pokemon_mode = st.radio(
+        "Mode", ["any", "all"], index=1, key="lost_pokemon_mode")
+
 st.header("Data used")
 data_selector_container = st.container()
 
@@ -99,7 +109,7 @@ if include_unrated:
 if len(seen_pokemon_filter) > 0:
     filter_func = any if seen_pokemon_mode == "any" else all
     seen_mask = df.appearances.apply(
-        lambda pokeset: filter_func(p in seen_pokemon_filter for p in pokeset))
+        lambda pokeset: filter_func(p in pokeset for p in seen_pokemon_filter))
     mask &= seen_mask
 
 if len(won_pokemon_filter) > 0:
@@ -107,6 +117,27 @@ if len(won_pokemon_filter) > 0:
     won_mask = df.wins.apply(
         lambda pokeset: filter_func(pokeset.get(mon, 0) for mon in won_pokemon_filter))
     mask &= won_mask
+
+if len(lost_pokemon_filter) > 0:
+    if lost_pokemon_mode == "all":
+        lost_mask = df.appearances.apply(
+            lambda pokeset: all(p in pokeset for p in lost_pokemon_filter))
+        for mon in lost_pokemon_filter:
+            num_appearances = df.appearances.apply(lambda pokeset: pokeset.get(mon, 0))
+            num_wins = df.wins.apply(lambda pokeset: pokeset.get(mon, 0))
+            poke_lost_mask = (num_appearances == 1) & (num_wins == 0)
+            poke_lost_mask |= (num_appearances == 2) & (num_wins == 1)
+            lost_mask &= poke_lost_mask
+        mask &= lost_mask
+    else:
+        lost_mask = ~df.appearances.astype(bool)
+        for mon in lost_pokemon_filter:
+            num_appearances = df.appearances.apply(lambda pokeset: pokeset.get(mon, 0))
+            num_wins = df.wins.apply(lambda pokeset: pokeset.get(mon, 0))
+            poke_lost_mask = (num_appearances == 1) & (num_wins == 0)
+            poke_lost_mask |= (num_appearances == 2) & (num_wins == 1)
+            lost_mask |= poke_lost_mask
+        mask &= lost_mask
 
 sample_df = df[mask]
 if sample_df.shape[0] == 0:
@@ -175,7 +206,8 @@ appearances_start, appearances_end = st.slider(
     "Num appearances filter",
     value=(10, single_pokemon_results_df.appearances.max()),
     min_value=single_pokemon_results_df.appearances.min(),
-    max_value=single_pokemon_results_df.appearances.max()
+    max_value=single_pokemon_results_df.appearances.max(),
+    key="single_pokemon_appearances_filter",
 )
 mask = appearances_start <= single_pokemon_results_df.appearances
 mask &= single_pokemon_results_df.appearances <= appearances_end
@@ -245,7 +277,8 @@ appearances_start, appearances_end = st.slider(
     "Num appearances filter",
     value=(10, multi_pokemon_results_df.appearances.max()),
     min_value=multi_pokemon_results_df.appearances.min(),
-    max_value=multi_pokemon_results_df.appearances.max()
+    max_value=multi_pokemon_results_df.appearances.max(),
+    key="multi_pokemon_appearances_filter",
 )
 
 seen_pokemon_filter = st.multiselect(
