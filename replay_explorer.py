@@ -388,3 +388,56 @@ multi_results_container.dataframe(
         "confidence_lower_bound": st.column_config.NumberColumn("% Win lower bound", format="%.2f %%"),
         "confidence_upper_bound": st.column_config.NumberColumn("% Win upper bound", format="%.2f %%"),
 })
+
+st.header("Pair analytics")
+
+def calc_pair(poke_pair, df):
+    mask = df.team.apply(lambda teamset: all(poke in teamset for poke in poke_pair))
+    wins = df[mask].wins.sum()
+    appearances = df[mask].appearances.sum()
+    return {
+        "team": poke_pair,
+        "wins": wins,
+        "appearances": appearances,
+        "win_pct": wins / appearances if appearances != 0 else 0,
+    }
+
+@st.cache_data
+def pair_analytics(poke_pairs, df):
+    data = []
+    for poke_pair in poke_pairs:
+        data.append(calc_pair(poke_pair, df))
+    result = pd.DataFrame(data=data)
+    result['max_error_999pct_confidence'] = \
+        3.29053 * np.sqrt(result.win_pct * (1 - result.win_pct) / (result.appearances + 1e-6))
+    result['win_pct'] *= 100
+    result['max_error_999pct_confidence'] *= 100
+    result['confidence_lower_bound'] = result.win_pct - result.max_error_999pct_confidence
+    result['confidence_upper_bound'] = result.win_pct + result.max_error_999pct_confidence
+    result = result.sort_values(by="confidence_lower_bound", ascending=False)
+    return result
+
+st.markdown("""This differs from **Multiple Pokemon Win-%** by combining ALL appearances of the pair, in any team combination. Mathematically speaking, this is the marginal probability of that pair winning.""")
+
+poke_pair_results_container = st.container()
+
+common_pokes = single_pokemon_results_df.sort_values(by="appearances", ascending=False).pokemon.values[:50]
+common_pokes = list(common_pokes)
+
+pokemon_pairs_selector = st.multiselect(
+    "Choose pokémon for pair analytics",
+    all_mons,
+    common_pokes if len(common_pokes) > 0  else None,
+    key="pair_analytics_pokemon_pairs_selector",
+)
+
+if len(pokemon_pairs_selector) > 1:
+    with st.spinner("Compulating..."):
+        poke_pairs = []
+        for i, p1 in enumerate(pokemon_pairs_selector[:-1]):
+            for p2 in pokemon_pairs_selector[i+1:]:
+                poke_pairs.append((p1, p2))
+        pairs_result = pair_analytics(poke_pairs, multi_pokemon_results_df)
+    poke_pair_results_container.dataframe(pairs_result)
+else:
+    poke_pair_results_container.warning("Select 2 or more pokémon")
