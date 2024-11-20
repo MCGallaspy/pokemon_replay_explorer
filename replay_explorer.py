@@ -391,6 +391,7 @@ multi_results_container.dataframe(
 
 st.header("Pair analytics")
 
+@st.cache_data
 def calc_pair(poke_pair, df):
     mask = df.team.apply(lambda teamset: all(poke in teamset for poke in poke_pair))
     wins = df[mask].wins.sum()
@@ -421,7 +422,7 @@ st.markdown("""This differs from **Multiple Pokemon Win-%** by combining ALL app
 
 poke_pair_results_container = st.container()
 
-common_pokes = single_pokemon_results_df.sort_values(by="appearances", ascending=False).pokemon.values[:50]
+common_pokes = single_pokemon_results_df.sort_values(by="appearances", ascending=False).pokemon.values[:75]
 common_pokes = list(common_pokes)
 
 pokemon_pairs_selector = st.multiselect(
@@ -438,6 +439,19 @@ if len(pokemon_pairs_selector) > 1:
             for p2 in pokemon_pairs_selector[i+1:]:
                 poke_pairs.append((p1, p2))
         pairs_result = pair_analytics(poke_pairs, multi_pokemon_results_df)
+    
+    appearances_start, appearances_end = poke_pair_results_container.slider(
+        "Appearances filter",
+        value=(20, pairs_result.appearances.max()),
+        min_value=pairs_result.appearances.min(),
+        max_value=pairs_result.appearances.max(),
+        key="pair_analytics_appearances_filter",
+    )
+
+    mask = pairs_result.appearances >= appearances_start
+    mask &= pairs_result.appearances <= appearances_end
+    pairs_result = pairs_result[mask]
     poke_pair_results_container.dataframe(pairs_result)
+    poke_pair_results_container.markdown(f"**{pairs_result.shape[0]}** unique pairs")
 else:
     poke_pair_results_container.warning("Select 2 or more pokémon")
